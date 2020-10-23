@@ -370,6 +370,13 @@ def cmd_importer(o):
         dst = path.rstrip(os.sep)
         dst = os.path.abspath(dst)
 
+        realdst = os.path.realpath(dst)
+        if dst != realdst:
+            # ask user
+            msg = 'Real path \"{}\" \ndiffers from \"{}\", resolve symlinks and import anyways'
+            if not LOG.ask(msg.format(realdst,dst)):
+                continue
+
         src = strip_home(dst)
         if o.import_as:
             # handle import as
@@ -430,6 +437,7 @@ def cmd_importer(o):
                     # ask user
                     msg = 'Dotfile \"{}\" already exists, overwrite?'
                     overwrite = LOG.ask(msg.format(srcf))
+
 
         if o.debug:
             LOG.dbg('will overwrite: {}'.format(overwrite))
