@@ -450,9 +450,7 @@ class Installer:
         and is to be ignored
         """
         overwrite = not self.safe
-        if self.dry:
-            self.log.dry('would install {}'.format(dst))
-            return 0, None
+
         if os.path.lexists(dst):
             rights = os.stat(src).st_mode
             samerights = False
@@ -472,7 +470,7 @@ class Installer:
                     if self.debug:
                         self.log.dbg('{} is the same'.format(dst))
                     return 1, None
-            if self.safe:
+            if self.safe or self.dry:
                 if self.debug:
                     self.log.dbg('change detected for {}'.format(dst))
                 if self.showdiff:
@@ -483,10 +481,15 @@ class Installer:
                                                        quiet=True)
                         if diff:
                             self._print_diff(src, dst, diff)
-                if not self.log.ask('Overwrite \"{}\"'.format(dst)):
+                if not self.dry and not self.log.ask('Overwrite \"{}\"'.format(dst)):
                     self.log.warn('ignoring {}'.format(dst))
                     return 1, None
                 overwrite = True
+
+        if self.dry:
+            self.log.dry('would install {}'.format(dst))
+            return 0, None
+
         if self.backup and os.path.lexists(dst):
             self._backup(dst)
         base = os.path.dirname(dst)
