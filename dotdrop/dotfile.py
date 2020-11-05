@@ -18,7 +18,7 @@ class Dotfile(DictParser):
     key_trans_w = 'trans_write'
     key_template = 'template'
 
-    def __init__(self, key, dst, src,
+    def __init__(self, key, dst, src, src_key=None,
                  actions=[], trans_r=None, trans_w=None,
                  link=LinkTypes.NOLINK, noempty=False,
                  cmpignore=[], upignore=[],
@@ -28,6 +28,7 @@ class Dotfile(DictParser):
         @key: dotfile key
         @dst: dotfile dst (in user's home usually)
         @src: dotfile src (in dotpath)
+        @src_key: dotfile src (not normalized)
         @actions: dictionary of actions to execute for this dotfile
         @trans_r: transformation to change dotfile before it is installed
         @trans_w: transformation to change dotfile before updating it
@@ -44,6 +45,7 @@ class Dotfile(DictParser):
         self.link = LinkTypes.get(link)
         self.noempty = noempty
         self.src = src
+        self.src_key = src_key
         self.trans_r = trans_r
         self.trans_w = trans_w
         self.upignore = upignore

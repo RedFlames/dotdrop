@@ -269,6 +269,10 @@ def cmd_compare(o, tmp):
                 LOG.dbg('points to itself')
             continue
 
+        log_dst = dotfile.dst
+        if log_dst.startswith(os.path.expanduser('~')):
+            log_dst = log_dst.replace(os.path.expanduser('~'), '~', 1)
+
         # install dotfile to temporary dir and compare
         ret, err, insttmp = inst.install_to_temp(t, tmp, src, dotfile.dst,
                                                  template=dotfile.template)
@@ -281,7 +285,19 @@ def cmd_compare(o, tmp):
             continue
         ignores = list(set(o.compare_ignore + dotfile.cmpignore))
         ignores = patch_ignores(ignores, dotfile.dst, debug=o.debug)
-        diff = comp.compare(insttmp, dotfile.dst, ignore=ignores)
+
+        src_newer = os.path.getmtime(asrc) > os.path.getmtime(adst)
+
+        if o.debug:
+            LOG.dbg('src newer: {}'.format(src_newer))
+
+        diff = ''
+        if o.compare_target == 'local' or (o.compare_target == 'smart' and not src_newer):
+            diff = comp.compare(dotfile.dst, insttmp, ignore=ignores)
+            diff_target = dotfile.dst
+        else:
+            diff = comp.compare(insttmp, dotfile.dst, ignore=ignores)
+            diff_target = insttmp
 
         # clean tmp transformed dotfile if any
         if tmpsrc:
@@ -293,11 +309,17 @@ def cmd_compare(o, tmp):
         if diff == '':
             if o.debug:
                 line = '=> compare {}: diffing with \"{}\"'
-                LOG.dbg(line.format(dotfile.key, dotfile.dst))
+                LOG.dbg(line.format(dotfile.src_key, log_dst))
                 LOG.dbg('same file')
         else:
             line = '=> compare {}: diffing with \"{}\"'
-            LOG.log(line.format(dotfile.key, dotfile.dst))
+            if diff_target == dotfile.dst:
+                line = line.format(log_dst, dotfile.src_key)
+            else:
+                line = line.format(dotfile.src_key, log_dst)
+            LOG.log(line)
+            if o.compare_target == 'smart':
+                LOG.sub('{} is newer'.format(dotfile.src_key if src_newer else log_dst))
             LOG.emph(diff)
             same = False
 

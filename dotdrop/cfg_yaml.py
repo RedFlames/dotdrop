@@ -58,6 +58,7 @@ class CfgYaml:
     key_dotfile_actions = 'actions'
     key_dotfile_noempty = 'ignoreempty'
     key_dotfile_template = 'template'
+    key_dotfile_src_key = 'src_key'
 
     # profile
     key_profile_dotfiles = 'dotfiles'
@@ -114,6 +115,8 @@ class CfgYaml:
         self._profilevarskeys = []
         # included profiles
         self._inc_profiles = addprofiles
+
+        self.dotpath_rel = ''
 
         # init the dictionaries
         self.settings = {}
@@ -417,6 +420,7 @@ class CfgYaml:
             self._check_minversion(minversion)
 
         # normalize paths
+        self.dotpath_rel = settings[self.key_settings_dotpath]
         p = self._norm_path(settings[self.key_settings_dotpath])
         settings[self.key_settings_dotpath] = p
         p = self._norm_path(settings[self.key_settings_workdir])
@@ -1150,6 +1154,7 @@ class CfgYaml:
         for dotfile in dotfiles.values():
             # src
             src = dotfile[self.key_dotfile_src]
+            dotfile[self.key_dotfile_src_key] = os.path.join('.', self.dotpath_rel, src)
             newsrc = self.resolve_dotfile_src(src, templater=self._tmpl)
             dotfile[self.key_dotfile_src] = newsrc
             # dst

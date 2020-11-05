@@ -41,6 +41,8 @@ OPT_LINK = {
     LinkTypes.LINK.name.lower(): LinkTypes.LINK,
     LinkTypes.LINK_CHILDREN.name.lower(): LinkTypes.LINK_CHILDREN}
 
+OPT_DIFF_BASE = ("local", "repo", "smart")
+
 BANNER = """     _       _      _
   __| | ___ | |_ __| |_ __ ___  _ __
  / _` |/ _ \| __/ _` | '__/ _ \| '_ |
@@ -54,7 +56,7 @@ Usage:
   dotdrop install   [-VbtfndDa] [-c <path>] [-p <profile>] [<key>...]
   dotdrop import    [-Vbdf]     [-c <path>] [-p <profile>] [-s <path>]
                                 [-l <link>] <path>...
-  dotdrop compare   [-Vb]       [-c <path>] [-p <profile>]
+  dotdrop compare   [-Vb]       [-c <path>] [-p <profile>] [-B <target>]
                                 [-C <file>...] [-i <pattern>...]
   dotdrop update    [-VbfdkP]   [-c <path>] [-p <profile>]
                                 [-i <pattern>...] [<path>...]
@@ -67,6 +69,7 @@ Usage:
 
 Options:
   -a --force-actions      Execute all actions even if no dotfile is installed.
+  -B --diff-base=<target> Choose whether diff runs against (local|repo|smart).
   -c --cfg=<path>         Path to the config.
   -C --file=<path>        Path of dotfile to compare.
   -i --ignore=<pattern>   Pattern to ignore.
@@ -235,6 +238,16 @@ class Options(AttrMonitor):
         self.install_ignore = self.instignore
         # "compare" specifics
         self.compare_focus = self.args['--file']
+        self.compare_target = 'repo'
+        if self.args['--diff-base']:
+            # overwrite direction of diffs
+            diff_base = self.args['--diff-base']
+            if isinstance(diff_base, list):
+                diff_base = diff_base[0]
+            if diff_base not in OPT_DIFF_BASE:
+                self.log.err('bad option for --diff-base: {}'.format(diff_base))
+                sys.exit(USAGE)
+            self.compare_target = diff_base
         self.compare_ignore = self.args['--ignore']
         self.compare_ignore.extend(self.cmpignore)
         self.compare_ignore.append('*{}'.format(self.install_backup_suffix))
