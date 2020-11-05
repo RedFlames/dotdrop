@@ -1179,7 +1179,8 @@ class CfgYaml:
         for dotfile in dotfiles.values():
             # src
             src = dotfile[self.key_dotfile_src]
-            dotfile[self.key_dotfile_src_key] = os.path.join('.', self.dotpath_rel, src)
+            src = os.path.join('.', self.dotpath_rel, src)
+            dotfile[self.key_dotfile_src_key] = src
             newsrc = self.resolve_dotfile_src(src, templater=self._tmpl)
             dotfile[self.key_dotfile_src] = newsrc
             # dst

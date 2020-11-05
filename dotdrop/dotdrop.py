@@ -292,7 +292,8 @@ def cmd_compare(o, tmp):
             LOG.dbg('src newer: {}'.format(src_newer))
 
         diff = ''
-        if o.compare_target == 'local' or (o.compare_target == 'smart' and not src_newer):
+        if o.compare_target == 'local' \
+                or (o.compare_target == 'smart' and not src_newer):
             diff = comp.compare(dotfile.dst, insttmp, ignore=ignores)
             diff_target = dotfile.dst
         else:
@@ -320,7 +321,10 @@ def cmd_compare(o, tmp):
                 line = line.format(dotfile.src_key, log_dst)
             LOG.log(line)
             if o.compare_target == 'smart':
-                LOG.sub('{} is newer'.format(dotfile.src_key if src_newer else log_dst))
+                if src_newer:
+                    LOG.sub('{} is newer'.format(dotfile.src_key))
+                else:
+                    LOG.sub('{} is newer'.format(log_dst))
             if not o.compare_fileonly:
                 LOG.emph(diff)
             same = False
@@ -397,8 +401,9 @@ def cmd_importer(o):
         realdst = os.path.realpath(dst)
         if dst != realdst:
             # ask user
-            msg = 'Real path \"{}\" \ndiffers from \"{}\", resolve symlinks and import anyways'
-            if not LOG.ask(msg.format(realdst,dst)):
+            msg = 'Real path \"{}\" \ndiffers from \"{}\", \
+                   resolve symlinks and import anyways:'
+            if not LOG.ask(msg.format(realdst, dst)):
                 continue
 
         src = strip_home(dst)
@@ -461,7 +466,6 @@ def cmd_importer(o):
                     # ask user
                     msg = 'Dotfile \"{}\" already exists, overwrite?'
                     overwrite = LOG.ask(msg.format(srcf))
-
 
         if o.debug:
             LOG.dbg('will overwrite: {}'.format(overwrite))

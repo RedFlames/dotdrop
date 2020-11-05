@@ -56,7 +56,7 @@ Usage:
   dotdrop install   [-VbtfndDa] [-c <path>] [-p <profile>] [<key>...]
   dotdrop import    [-Vbdf]     [-c <path>] [-p <profile>] [-s <path>]
                                 [-l <link>] <path>...
-  dotdrop compare   [-LVb]       [-c <path>] [-p <profile>] [-B <target>]
+  dotdrop compare   [-LVb]      [-c <path>] [-p <profile>] [-B <target>]
                                 [-C <file>...] [-i <pattern>...]
   dotdrop update    [-VbfdkP]   [-c <path>] [-p <profile>]
                                 [-i <pattern>...] [<path>...]
@@ -246,7 +246,7 @@ class Options(AttrMonitor):
             if isinstance(diff_base, list):
                 diff_base = diff_base[0]
             if diff_base not in OPT_DIFF_BASE:
-                self.log.err('bad option for --diff-base: {}'.format(diff_base))
+                self.log.err('bad option for --diff-base {}'.format(diff_base))
                 sys.exit(USAGE)
             self.compare_target = diff_base
         self.compare_ignore = self.args['--ignore']

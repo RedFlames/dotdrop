@@ -481,7 +481,8 @@ class Installer:
                                                        quiet=True)
                         if diff:
                             self._print_diff(src, dst, diff)
-                if not self.dry and not self.log.ask('Overwrite \"{}\"'.format(dst)):
+                if not self.dry and \
+                        not self.log.ask('Overwrite \"{}\"'.format(dst)):
                     self.log.warn('ignoring {}'.format(dst))
                     return 1, None
                 overwrite = True
