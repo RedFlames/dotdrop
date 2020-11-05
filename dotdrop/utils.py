@@ -19,6 +19,10 @@ from dotdrop.logger import Logger
 
 LOG = Logger()
 STAR = '*'
+# the environment variable for temporary
+ENV_TEMP = 'DOTDROP_TMPDIR'
+# the temporary directory
+TMPDIR = None
 
 # files dotdrop refuses to remove
 DONOTDELETE = [
@@ -87,44 +91,80 @@ def diff(original, modified, raw=True,
 
 
 def get_tmpdir():
-    """create a temporary directory"""
+    """create and return the temporary directory"""
+    global TMPDIR
+    if TMPDIR:
+        return TMPDIR
+    t = _get_tmpdir()
+    TMPDIR = t
+    return t
+
+
+def _get_tmpdir():
+    """create the tmpdir"""
+    try:
+        if ENV_TEMP in os.environ:
+            t = os.environ[ENV_TEMP]
+            t = os.path.expanduser(t)
+            t = os.path.abspath(t)
+            t = os.path.normpath(t)
+            os.makedirs(t, exist_ok=True)
+            return t
+    except Exception:
+        pass
     return tempfile.mkdtemp(prefix='dotdrop-')
 
 
 def get_tmpfile():
     """create a temporary file"""
-    (_, path) = tempfile.mkstemp(prefix='dotdrop-')
+    tmpdir = get_tmpdir()
+    (_, path) = tempfile.mkstemp(prefix='dotdrop-', dir=tmpdir)
     return path
 
 
 def get_unique_tmp_name():
     """get a unique file name (not created)"""
     unique = str(uuid.uuid4())
-    return os.path.join(tempfile.gettempdir(), unique)
+    tmpdir = get_tmpdir()
+    return os.path.join(tmpdir, unique)
 
 
-def remove(path, quiet=False):
-    """remove a file/directory/symlink"""
+def remove(path, logger=None):
+    """
+    remove a file/directory/symlink
+    if logger is defined, OSError are catched
+    and printed to logger.warn instead of being forwarded
+    as OSError
+    """
     if not path:
         return
     if not os.path.lexists(path):
-        if quiet:
+        err = 'File not found: {}'.format(path)
+        if logger:
+            logger.warn(err)
             return
-        raise OSError("File not found: {}".format(path))
+        raise OSError(err)
     if os.path.normpath(os.path.expanduser(path)) in NOREMOVE:
-        if quiet:
-            return
         err = 'Dotdrop refuses to remove {}'.format(path)
+        if logger:
+            logger.warn(err)
+            return
         LOG.err(err)
         raise OSError(err)
-    if os.path.islink(path) or os.path.isfile(path):
-        os.unlink(path)
-    elif os.path.isdir(path):
-        rmtree(path)
-    else:
-        if quiet:
+    try:
+        if os.path.islink(path) or os.path.isfile(path):
+            os.unlink(path)
+        elif os.path.isdir(path):
+            rmtree(path)
+        else:
+            err = 'Unsupported file type for deletion: {}'.format(path)
+            raise OSError(err)
+    except Exception as e:
+        err = str(e)
+        if logger:
+            logger.warn(err)
             return
-        raise OSError("Unsupported file type for deletion: {}".format(path))
+        raise OSError(err)
 
 
 def samefile(path1, path2):

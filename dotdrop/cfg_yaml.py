@@ -256,6 +256,16 @@ class CfgYaml:
     # public methods
     ########################################################
 
+    def _resolve_dotfile_link(self, link):
+        """resolve dotfile link entry"""
+        newlink = self._template_item(link)
+        # check link value
+        if newlink not in self.allowed_link_val:
+            err = 'bad value: {}'.format(newlink)
+            self._log.err(err)
+            raise YamlException('config content error: {}'.format(err))
+        return newlink
+
     def resolve_dotfile_src(self, src, templater=None):
         """resolve dotfile src path"""
         newsrc = ''
@@ -344,6 +354,8 @@ class CfgYaml:
 
     def del_dotfile_from_profile(self, df_key, pro_key):
         """remove this dotfile from that profile"""
+        if self._debug:
+            self._dbg('removing \"{}\" from \"{}\"'.format(df_key, pro_key))
         if df_key not in self.dotfiles.keys():
             self._log.err('key not in dotfiles: {}'.format(df_key))
             return False
@@ -352,6 +364,9 @@ class CfgYaml:
             return False
         # get the profile dictionary
         profile = self._yaml_dict[self.key_profiles][pro_key]
+        if self.key_profile_dotfiles not in profile:
+            # profile does not contain any dotfiles
+            return True
         if df_key not in profile[self.key_profile_dotfiles]:
             return True
         if self._debug:
@@ -1015,7 +1030,7 @@ class CfgYaml:
             content = self._yaml_load(path)
         except Exception as e:
             self._log.err(e)
-            raise YamlException('config format error: {}'.format(path))
+            raise YamlException('config yaml error: {}'.format(path))
 
         return content
 
@@ -1130,7 +1145,17 @@ class CfgYaml:
             if dst is None:
                 dotfile[self.key_dotfile_dst] = ''
 
-        # only keep dotfiles related to the selected profile
+        # resolve links before taking subset of
+        # dotfiles to avoid issues in upper layer
+        for dotfile in dotfiles.values():
+            # link
+            if self.key_dotfile_link in dotfile:
+                # normalize the link value
+                link = dotfile[self.key_dotfile_link]
+                newlink = self._resolve_dotfile_link(link)
+                dotfile[self.key_dotfile_link] = newlink
+
+        #  only keep dotfiles related to the selected profile
         pdfs = []
         pro = self.profiles.get(self._profile, [])
         if pro:
@@ -1161,17 +1186,6 @@ class CfgYaml:
             dst = dotfile[self.key_dotfile_dst]
             newdst = self.resolve_dotfile_dst(dst, templater=self._tmpl)
             dotfile[self.key_dotfile_dst] = newdst
-            # normalize the link value
-            if self.key_dotfile_link in dotfile:
-                # link
-                link = dotfile[self.key_dotfile_link]
-                newlink = self._template_item(link)
-                dotfile[self.key_dotfile_link] = newlink
-                # check link value
-                if newlink not in self.allowed_link_val:
-                    err = 'bad value: {}'.format(newlink)
-                    self._log.err(err)
-                    raise YamlException('config content error: {}'.format(err))
 
     def _rec_resolve_variables(self, variables):
         """recursive resolve variables"""
